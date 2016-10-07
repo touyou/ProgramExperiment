@@ -5,9 +5,9 @@ void reverse(char (*a)[], int k) {
     char *tmp;
 
     for (i = 0; i < (k - 1) / 2; i++) {
-        tmp = *(*a)[i];
-        *(*a)[i] = *(*a)[k - i - 1];
-        *(*a)[k - i -1] = tmp;
+        tmp = (*a)[i];
+        (*a)[i] = (*a)[k - i - 1];
+        (*a)[k - i -1] = tmp;
     }
 }
 
