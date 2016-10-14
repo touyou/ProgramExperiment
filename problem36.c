@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
  
-char *substr(char *s)
+char *substr(char *s, int *pos)
 {
     int i = 0;
     char *p;
@@ -16,6 +16,8 @@ char *substr(char *s)
         i++;
     }
 
+    *pos = i;
+
     return p + i;
 }
  
@@ -23,18 +25,19 @@ int main()
 {
     char buf[100] = "";
     char *s[5];
+    int pos[5];
     int i;
  
     for (i = 0; i < 5; i++) {
         scanf("%99s", buf);
-        s[i] = substr(buf);
+        s[i] = substr(buf, &pos[i]);
         buf[0] = '\0';
     }
  
     for (i = 4; 0 <= i; i--) {
         printf("%s\n", s[i]);
         /* 以下の行を入れるとエラーになる。 */
-        /* free(s[i]); */
+        free(s[i] - pos[i]);
     }
     return 0;
 }
