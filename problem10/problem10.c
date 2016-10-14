@@ -2,6 +2,7 @@
  * https://github.com/brenns10/lsh/blob/master/src/main.c
  * の発展
  * my shell
+ * mkdir, ls, rm, mv, cp, pwd部分が自作となっています。
  */
 #include <sys/wait.h>
 #include <unistd.h>
@@ -13,6 +14,8 @@
 int msh_cd(char **args);
 int msh_mkdir(char **args);
 int msh_ls(char **args);
+int msh_rm(char **args);
+int msh_pwd(char **args);
 int msh_help(char **args);
 int msh_exit(char **args);
 
@@ -21,6 +24,8 @@ char *builtin_str[] = {
     "cd",
     "mkdir",
     "ls",
+    "rm",
+    "pwd",
     "help",
     "exit"
 };
@@ -29,6 +34,8 @@ int (*builtin_func[]) (char **) = {
     &msh_cd,
     &msh_mkdir,
     &msh_ls,
+    &msh_rm,
+    &msh_pwd,
     &msh_help,
     &msh_exit
 };
@@ -38,6 +45,25 @@ int msh_num_builtins() {
 }
 
 // builtin commands implementations :
+
+int msh_pwd(char **args) {
+    system("pwd");
+
+    return 1;
+}
+
+// remove
+int msh_rm(char **args) {
+    if (args[1] == NULL) {
+        fprintf(stderr, "msh: expected argument to \"rm\"\n");
+    } else {
+        char buff[1024];
+        sprintf(buff, "rm -rf %s", args[1]);
+        system(buff);
+    }
+
+    return 1;
+}
 
 // look up
 int msh_ls(char **args) {
