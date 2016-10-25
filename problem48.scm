@@ -1,0 +1,13 @@
+(define (fib2 n)
+ (cond ((= n 0) 0)
+       ((= n 1) 1)
+       (else
+        (let ((a 1)
+              (b 1)
+              (c 2))
+         (while (< c n)
+          (let ((temp b))
+           (set! b (+ b a))
+           (set! a temp)
+           (set! c (+ c 1))))
+         b))))

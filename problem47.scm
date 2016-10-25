@@ -1,0 +1,7 @@
+(define (fact2 n)
+ (let ((ret 1)
+       (cnt 1))
+  (while (<= cnt n)
+   (set! ret (* ret cnt))
+   (set! cnt (+ cnt 1)))
+  ret))
