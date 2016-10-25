@@ -1,2 +1,0 @@
-(define (even<odd? a b c d e)
-	(if (< (evencount a b c d e) (oddcount a b c d e)))
