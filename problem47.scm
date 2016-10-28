@@ -1,7 +1,5 @@
-(define (fact2 n)
- (let ((ret 1)
-       (cnt 1))
-  (while (<= cnt n)
-   (set! ret (* ret cnt))
-   (set! cnt (+ cnt 1)))
-  ret))
+(define (fact2-iter n acc)
+  (if (= n 0)
+      acc
+      (fact2-iter (- n 1) (* acc n))))
+(define (fact2 n) (fact2-iter n 1))

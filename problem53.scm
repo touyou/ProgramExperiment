@@ -1,0 +1,6 @@
+(define (ack-iter m n acc)
+  (cond ((and (= m 0) (not (null? acc))) (ack-iter (car acc) (+ n 1) (cdr acc)))
+	((= m 0) (+ n 1))
+	((= n 0) (ack-iter (- m 1) 1 acc))
+	(else (ack-iter m (- n 1) (cons (- m 1) acc)))))
+(define (ack m n) (ack-iter m n '()))
