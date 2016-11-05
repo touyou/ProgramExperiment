@@ -1,24 +1,15 @@
-; marge sort
+; splay heap
+; heap sort
 
-(define (filter predicate ls)
- (cond ((null? ls) '())
-  ((predicate (car ls))
-   (cons (car ls) (filter predicate (cdr ls))))
-  (else
-   (filter predicate (cdr ls)))))
+(define (heap-empty) (list))
+(define heap-null? null?)
+(define heap-top cadr)
+(define heap-left car)
+(define heap-right caddr)
+(define (heap-single n) '(heap-empty n heap-empty))
+(define (new-heap n h1 h2) '(h1 n h2))
 
-(define (my-fold op init l)
- (if (null? l)
-  init
-  (my-fold op (op (car l) init) (cdr l))))
+(define 
 
-(define (make-new-list a b c)
- (my-fold cons (my-fold cons (my-fold cons '() a) b) c))
-
-(define (my-sort li)
- (if (null? (car li))
-  (car li)
-  (let ((lit (filter (lambda (x) (string>? (car li) x)) (cdr li)))
-        (big (filter (lambda (x) (string<? (car li) x)) (cdr li)))
-        (eql (filter (lambda (x) (string=? (car li) x)) li)))
-   (my-sort (make-new-list lit eql big)))))
+(define (heap-insert h n)
+ (new-heap (smaller h n) n (bigger h n)))
