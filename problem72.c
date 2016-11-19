@@ -14,7 +14,7 @@ List list_empty() {
 }
 
 int list_isempty(List l) {
-    if (l == NULL) {
+    if (l == NULL || l->data == NULL) {
         return 1;
     } else {
         return 0;
@@ -38,7 +38,7 @@ void list_free(List l) {
 }
 
 void list_putl(List l) {
-    while (! list_isempty(l)) {
+    while (!list_isempty(l)) {
         printf("%s\n", l->data);
         l = l->next;
     }
@@ -47,12 +47,17 @@ void list_putl(List l) {
 void my_sort(List l) {
     // quick sort
     if (list_isempty(l)) return;
+    if (l->data == NULL) return;
+    printf("debug: %s\n", l->data);
     String pivot = malloc(strlen(l->data));
     strcpy(pivot, l->data);
     List a = malloc(sizeof(List));
     List b = malloc(sizeof(List));
-    List next = l->next;
-    while(list_isempty(next) != 0) {
+    List next = malloc(sizeof(List));
+    next = l->next;
+    printf("first: %s\n", next->data);
+    while(!list_isempty(next)) {
+        printf("loop\n");
         if (strcmp(next->data, pivot) <= 0) {
             a = list_cons(next->data, a);
         } else {
@@ -60,10 +65,12 @@ void my_sort(List l) {
         }
         next = next->next;
     }
+    printf("a sort\n");
     my_sort(a);
+    printf("b sort\n");
     my_sort(b);
     next = a->next;
-    while(list_isempty(next) != 0) {
+    while(!list_isempty(next)) {
         next = next->next;
     }
     List new = malloc(sizeof(List));
