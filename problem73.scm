@@ -1,0 +1,28 @@
+(define (stack-push st val)
+  (cons val st)
+  )
+(define (stack-read st)
+  (car st)
+  )
+(define (stack-pop st)
+  (cdr st)
+  )
+
+(define (calc-add st)
+ (let ((a (stack-read st))
+       (b (stack-read (stack-pop st)))
+       (poped (stack-pop (stack-pop st))))
+  (stack-push poped (+ a b))))
+
+(define (calc-sub st)
+ (let ((a (stack-read st))
+       (b (stack-read (stack-pop st)))
+       (poped (stack-pop (stack-pop st))))
+  (stack-push poped (- b a))))
+
+(define (calc-mul st)
+ (let ((a (stack-read st))
+       (b (stack-read (stack-pop st)))
+       (poped (stack-pop (stack-pop st))))
+  (stack-push poped (* a b))))
+
