@@ -1,48 +1,53 @@
-(define (btree-top t)
- (cdar t))
-(define (btree-left t)
- (car t))
-(define (btree-right t)
- (cddr t))
+(define btree-top cadr)
+(define btree-left car)
+(define btree-right caddr)
+(define (btree-empty) (list))
+(define btree-null? null?)
 
-(define (btree-single val)
- (list btree-empty val btree-empty))
-
-(define (btree-empty)
-  ;; 空木を返す。
-  (list)
-  )
-(define (btree-null? t)
-  ;; 二分木`t'が空かどうかを真偽値で返す。
-  (null? t)
-  )
 (define (btree-insert key val t)
-  ;; 文字列`key'をキーとして文字列`val'を二分探索木`t'に挿入し、その木を返す。
-  (cond
-   ((btree-null? t)
-    (btree-single (cons key val)))
-   ((string>? (btree-top t) key)
-    (list (btree-insert key val (btree-left t)) (btree-top t) (btree-right t)))
-   (else
-    (list (btree-left t) (btree-top t) (btree-insert key val (btree-right t))))
-   )
-  )
+  (if (btree-null? t)
+    (list (btree-empty) (list key val) (btree-empty))
+    (let ((top (btree-top t))
+        (pkey (car (btree-top t)))
+        (left (btree-left t))
+        (right (btree-right t)))
+            (cond ((string=? pkey key) (list left (list key val) right))
+                    ((string>? pkey key) (list (btree-insert key val left) top right))
+                    (else (list left top (btree-insert key val right)))))))
+
 (define (btree-delete key t)
-  ;; 文字列`key'をキーとする項目を、二分探索木`t'から削除し、その木を返す。
-  (cond
-   ((btree-null? t) t)
-   ((string=? (btree-top t) key)
-    (list (btree-left t) (btree-top (btree-right t)) 
-  )
+  (if (btree-null? t)
+  t
+  (let ((top (btree-top t))
+      (pkey (car (btree-top t)))
+      (left (btree-left t))
+      (right (btree-right t)))
+      (cond ((string=? pkey key) (list (merge-btree left (btree-left right)) (btree-top right) (btree-right right)))
+            ((string>? pkey key) (btree-delete key left))
+            (else (btree-delete key right))))))
+
+(define (merge-btree t acc)
+    (if (null? acc)
+        t
+        (let ((key (car (car acc))) (value (cdr (car acc))))
+            (merge-btree (btree-insert key value t) (cdr acc)))
+    )
+)
+
 (define (btree-search key t)
-  ;; 文字列`key'をキーとして二分探索木`t'を検索し、キーとデータのペアを返す。
-  ;; 見つからない場合は、#fを返す。
-  (cond
-   ((btree-null? t) #f)
-   ((string=? (btree-top t) key) (btree-top t))
-   ((string>? (btree-top t) key) (btree-search key (btree-left t)))
-   (else (btree-search key (btree-right t))))
-  )
+  (if (btree-null? t)
+  #f
+  (let ((top (btree-top t))
+      (pkey (car (btree-top t)))
+      (left (btree-left t))
+      (right (btree-right t)))
+      (cond
+        ((string=? pkey key) top)
+        ((string>? pkey key) (btree-search key left))
+        (else (btree-search key right))
+  ))))
+
+
 (let ((t (btree-empty)))
   (define (input->string x)
     (cond
