@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -88,7 +89,10 @@ BTree btree_delete(String key, BTree t)
      */
     if (btree_isempty(t)) return t;
     if (strcmp(t->key, key) == 0) {
-        t = new_tree(t->right->key, t->right->value, merge_tree(t->left, t->right->left), t->right->right);
+        if (btree_isempty(t->right))
+            t = t->left;
+        else
+            t = new_tree(t->right->key, t->right->value, merge_tree(t->left, t->right->left), t->right->right);
     } else if (strcmp(t->key, key) < 0) {
         t->left = btree_delete(key, t->left);
     } else {
@@ -121,29 +125,37 @@ void btree_free(BTree t)
     btree_free(t->right);
 }
 
+int hash(String key) {
+    int ret = 0;
+    for (int i=0; i<strlen(key); i++) ret += (int)(key[i] - 'a');
+    return ret % 30;
+}
+
 int main() {
-    BTree t = btree_empty();
+    BTree *table = malloc(sizeof(struct tnode) * 30);
     char cmd[100], key[100], val[100];
     while(scanf("%100s", cmd) != EOF) {
         if (strcmp(cmd, "insert") == 0) {
             scanf("%100s%100s", key, val);
-            t = btree_insert(key, val, t);
+            int h = hash(key);
+            table[h] = btree_insert(key, val, table[h]);
         } else if (strcmp(cmd, "search") == 0) {
             scanf("%100s", key);
-            struct tnode *res = btree_search(key, t);
+            int h = hash(key);
+            struct tnode *res = btree_search(key, table[h]);
             if (res == NULL) printf("(not found)\n");
             else printf("%s\n", res->value);
         } else if (strcmp(cmd, "delete") == 0) {
             scanf("%100s", key);
-            t = btree_delete(key, t);
+            int h = hash(key);
+            table[h] = btree_delete(key, table[h]);
         } else if (strcmp(cmd, "quit") == 0) {
             break;
         } else {
             printf("(unknown command)\n");
         }
     }
-
-    if (!btree_isempty(t)) btree_free(t);
+    for (int i=0; i<30; i++) if (!btree_isempty(table[i])) btree_free(table[i]);
 
     return 0;
 }
