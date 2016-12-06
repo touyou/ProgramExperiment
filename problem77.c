@@ -157,5 +157,7 @@ int main() {
     }
     for (int i=0; i<30; i++) if (!btree_isempty(table[i])) btree_free(table[i]);
 
+    free(table);
+
     return 0;
 }

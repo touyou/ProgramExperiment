@@ -1,0 +1,161 @@
+problem101b.cとして
+
+#include <stdio.h>
+ 
+void f(size_t n, unsigned long *a);
+ 
+int main() {
+    unsigned long a[100];
+    int i;
+    f(100, a);
+    for(i = 0; i < 100; ++i) {
+        printf("%lu\n", a[i]);
+    }
+    return 0;
+}
+
+を、problem101b.sとして
+
+    .globl f
+f:
+    cmpdi %r3, 0
+    beqlr
+    li %r5, 0
+    mtctr %r3
+    mr %r6, %r4
+init_loop:
+    std %r5, 0(%r6)
+    addi %r6, %r6, 8
+    addi %r5, %r5, 1
+    bdnz init_loop
+    li %r5, 2
+    li %r6, 16
+outer_loop:
+    cmpd %r5, %r3
+    bge- outer_loop_end
+    add %r8, %r4, %r6
+    ld %r7, 0(%r8)
+    cmpd %r7, %r5
+    bne outer_loop_cont
+    addi %r9, %r3, -1
+    divdu %r9, %r9, %r5
+    mtctr %r9
+    addi %r10, %r5, -1
+inner_loop:
+    ld %r7, 0(%r8)
+    divwu %r7, %r7, %r5
+    mullw %r7, %r7, %r10
+    std %r7, 0(%r8)
+    add %r8, %r8, %r6
+    bdnz inner_loop
+outer_loop_cont:
+    addi %r5, %r5, 1
+    addi %r6, %r6, 8
+    b outer_loop
+outer_loop_end:
+    blr
+
+を行い、これをコンパイルして実行したところ以下のようになった。
+
+g020@ubuntu-power1:~/asprac$ gcc problem101b.c problem101b.s -o main
+g020@ubuntu-power1:~/asprac$ ./main
+0
+1
+1
+2
+2
+4
+2
+6
+4
+6
+4
+10
+4
+12
+6
+8
+8
+16
+6
+18
+8
+12
+10
+22
+8
+20
+12
+18
+12
+28
+8
+30
+16
+20
+16
+24
+12
+36
+18
+24
+16
+40
+12
+42
+20
+24
+22
+46
+16
+42
+20
+32
+24
+52
+18
+40
+24
+36
+28
+58
+16
+60
+30
+36
+32
+48
+20
+66
+32
+44
+24
+70
+24
+72
+36
+40
+36
+60
+24
+78
+32
+54
+40
+82
+24
+64
+42
+56
+40
+88
+24
+72
+44
+60
+46
+72
+32
+96
+42
+60
