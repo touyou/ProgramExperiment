@@ -127,7 +127,7 @@ void btree_free(BTree t)
 
 int hash(String key) {
     int ret = 0;
-    for (int i=0; i<strlen(key); i++) ret += (int)(key[i] - 'a');
+    for (int i=0; i<strlen(key); i++) ret += (int)(key[i]);
     return ret % 30;
 }
 
