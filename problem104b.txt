@@ -1,0 +1,51 @@
+まず以下のプログラムをproblem104b.sとして保存した。
+
+    .global swap_gt
+swap_gt:
+    # ポインタに入っている値を一旦レジスタに保存
+    lwa %r5, 0(%r3)
+    lwa %r6, 0(%r4)
+    # x <= yが成立していたらskipまで飛ぶ
+    cmpw %r5, %r6
+    ble skip
+    # ポインタの場所に入れ替えて値をセット
+    stw %r5, 0(%r4)
+    stw %r6, 0(%r3)
+skip:
+    blr
+
+
+そしてテスト用に以下のようなプログラムをproblem104b.cとして保存した。
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+void swap_gt(int *x, int *y);
+
+const int test[][4] = {
+    {1, 2, 1, 2},
+    {10, 2, 2, 10}
+};
+
+int main() {
+    int i;
+    for (i = 0; i < (int)(sizeof(test)/sizeof(*test)); i++) {
+        int x, y;
+        x = test[i][0]; y = test[i][1];
+        swap_gt(&x, &y);
+        printf("swap_gt(%d, %d) -> x = %d, y = %d\n", test[i][0], test[i][1], x, y);
+        if (x == test[i][2] && y == test[i][3]) puts("ok");
+        else puts("ng");
+    }
+    return 0;
+}
+
+そしてこれをコンパイルして実行すると以下のようになった。
+
+g020@ubuntu-power1:~/asprac$ gcc -Wall problem104b.c problem104b.s -o problem104
+g020@ubuntu-power1:~/asprac$ ./problem104
+swap_gt(1, 2) -> x = 1, y = 2
+ok
+swap_gt(10, 2) -> x = 2, y = 10
+ok

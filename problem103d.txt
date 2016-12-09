@@ -1,0 +1,52 @@
+以下のプログラムをproblem103d.sで保存した。
+
+    .global maxof2
+maxof2:
+    # x<=yならans_yに分岐
+    cmpw %r3, %r4
+    ble ans_y
+    # そうでなければxが答え
+    blr
+ans_y:
+    # xの入っていたところにyを入れればそれが返り値になる
+    mr %r3, %r4
+    blr
+
+その後このテスト用に以下のコードをproblem103d.cとして保存した。
+
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int maxof2(int x, int y);
+
+const int test[][3] = {
+    {2, 4, 4},
+    {-3, 5, 5},
+    {4, -10, 4},
+    {1, 100, 100}
+};
+
+int main() {
+    int i;
+    for (i = 0; i < (int)(sizeof(test)/sizeof(*test)); i++) {
+        int r = maxof2(test[i][0], test[i][1]);
+        printf("maxof2(%d, %d) == %d\n", test[i][0], test[i][1], r);
+        if (r == test[i][2]) puts("ok");
+        else puts("ng");
+    }
+    return 0;
+}
+
+これを以下のようにコンパイルして実行した。
+
+g020@ubuntu-power1:~/asprac$ gcc -Wall problem103d.c problem103d.s -o problem103
+g020@ubuntu-power1:~/asprac$ ./problem103
+maxof2(2, 4) == 4
+ok
+maxof2(-3, 5) == 5
+ok
+maxof2(4, -10) == 4
+ok
+maxof2(1, 100) == 100
+ok
