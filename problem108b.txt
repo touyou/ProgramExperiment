@@ -1,0 +1,94 @@
+まず以下のコードをproblem108b.sとして保存した。
+
+
+	.section ".rodata"
+	.align 3
+	# 定数0.0と1.0
+fzero:
+	.double 0.0
+	.align 3
+fone:
+	.double 1.0
+	.section ".text"
+	.align 2
+	.global saturate
+saturate:
+	# 0.0を読み出す
+	addis %r3, %r2, fzero@toc@ha
+	addi %r3, %r3, fzero@toc@l
+	# %f2に0.0を、%f3に1.0を入れる
+	lfd %f2, 0(%r3)
+	# 1.0を読み出す
+	addis %r3, %r2, fone@toc@ha
+	addi %r3, %r3, fone@toc@l
+	lfd %f3, 0(%r3)
+	# 0.0以下なら0.0を返す(NaNを除外するために二回にわける)
+	fcmpu %cr0, %f1, %f2
+	blt ret_zero
+	beq ret_zero
+	# 1.0より大きいなら1.0を返す
+	fcmpu %cr0, %f1, %f3
+	bgt ret_one
+	# 0.0以上1.0以下もしくはNaNならそのまま
+	blr
+ret_zero:
+	fmr %f1, %f2
+	blr
+ret_one:
+	fmr %f1, %f3
+	blr
+
+そしてテスト用に以下のコードをproblem108b.cとして保存した。
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+double saturate(double x);
+
+static int fp_equiv(double x, double y) {
+      return (isnan(x) && isnan(y)) || (x == y && signbit(x) == signbit(y));
+}
+
+const double test[][2] = {
+    {-3.4, 0.0},
+    {0.375, 0.375},
+    {1.5, 1.0},
+    {-5.78, 0.0},
+    {-0.0, 0.0},
+    {-INFINITY, 0.0},
+    {INFINITY, 1.0},
+    {NAN, NAN}
+};
+
+int main() {
+    for (int i=0; i<(int)(sizeof(test)/sizeof(*test)); i++) {
+        double r = saturate(test[i][0]);
+        printf("saturate(%f) == %f\n", test[i][0], r);
+        if (fp_equiv(test[i][1], r)) puts("ok");
+        else puts("ng");
+    }
+    return 0;
+}
+
+そして以下のように実行した。
+
+g020@ubuntu-power1:~/asprac$ gcc -Wall problem108b.c problem108b.s -o problem108
+g020@ubuntu-power1:~/asprac$ ./problem108
+saturate(-3.400000) == 0.000000
+ok
+saturate(0.375000) == 0.375000
+ok
+saturate(1.500000) == 1.000000
+ok
+saturate(-5.780000) == 0.000000
+ok
+saturate(-0.000000) == 0.000000
+ok
+saturate(-inf) == 0.000000
+ok
+saturate(inf) == 1.000000
+ok
+saturate(nan) == nan
+ok

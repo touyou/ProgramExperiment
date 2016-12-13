@@ -1,0 +1,64 @@
+まず以下をproblem106c.sとして保存した。
+
+
+	.global mystrlen
+mystrlen:
+	# 答えとして使う変数
+	li %r5, 0
+loop:
+	# 1バイト読み込む
+	lbz %r4, 0(%r3)
+	# 終端文字に出会ったら終了
+	cmpdi %r4, 0
+	beq ret
+	# 1文字あったのでカウントを増やす
+	addi %r5, %r5, 1
+	# 文字の場所も一文字進める
+	addi %r3, %r3, 1
+	b loop
+ret:
+	# 答えを返り値へと移動
+	mr %r3, %r5
+	blr
+
+そしてテスト用に以下のコードをproblem106c.cとして保存した。
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+size_t mystrlen(const char* s);
+
+struct testcase {
+    const char* s;
+    size_t result;
+};
+
+const struct testcase tests[] = {
+    {"foo", strlen("foo")},
+    {"", strlen("")},
+    {"\n\0\n", strlen("\n\0\n")}
+};
+
+int main() {
+    for (int i=0; i<(int)(sizeof(tests)/sizeof(*tests)); i++) {
+        size_t ret = mystrlen(tests[i].s);
+        printf("mystrlen(%s)==%zu\n", tests[i].s, ret);
+        if (tests[i].result == ret) puts("ok");
+        else puts("ng");
+    }
+    return 0;
+}
+
+そして以下のように実行した。
+
+g020@ubuntu-power1:~/asprac$ gcc -Wall problem106c.c problem106c.s -o problem106
+g020@ubuntu-power1:~/asprac$ ./problem106
+mystrlen(foo)==3
+ok
+mystrlen()==0
+ok
+mystrlen(
+        )==1
+ok
