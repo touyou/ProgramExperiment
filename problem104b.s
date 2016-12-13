@@ -11,3 +11,4 @@ swap_gt:
 	stw %r6, 0(%r3)
 skip:
 	blr
+
