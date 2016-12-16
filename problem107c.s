@@ -13,9 +13,9 @@ fresh:
 	addis %r4, %r2, variable@toc@ha
 	addi %r4, %r4, variable@toc@l
 	# 返り値にはその時点での数値を代入
-	ld %r3, 0(%r4)
+	ldw %r3, 0(%r4)
 	# 返り値に1足したものを用意
 	addi %r5, %r3, 1
 	# 次の値として書き込む
-	std %r5, 0(%r4)
+	stdw %r5, 0(%r4)
 	blr
