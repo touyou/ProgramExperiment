@@ -1,0 +1,27 @@
+まずアセンブリの方をproblem115c.sとして、Cプログラムをproblem115c.cとして保存して以下のように実行した。
+
+g020@ubuntu-power1:~/ProgramExperiment$ gcc -pthread problem115c.c problem115c.s -o problem115.o
+g020@ubuntu-power1:~/ProgramExperiment$ ./problem115.o
+counter = 98909568
+
+この時Cプログラムは二つのスレッドを作り、そのそれぞれでcounterから100000000回デクリメントしようとするが、途中で各スレッドのデクリメントが干渉して無視される場合がある。
+よってこの出力はそのデクリメントが無視された合計の回数を表していることになる。
+特にアセンブリをアトミックにしていないため、片方のスレッドがほとんど無視されていることが確認できる。
+
+次に以下のようにアトミックな操作に書き換える。
+
+
+    .globl decrement
+decrement:
+    lwarx %r4, 0, %r3
+    addi %r4, %r4, -1
+    stwcx. %r4, 0, %r3
+    bne- decrement
+
+すると以下のように実行結果が変わる
+
+g020@ubuntu-power1:~/ProgramExperiment$ gcc -pthread problem115c.c problem115c.s -o problem115.o
+g020@ubuntu-power1:~/ProgramExperiment$ ./problem115.o
+counter = 0
+
+アトミックな操作にするともう片方のスレッドから割り込まれた時再試行することができるためこのようにどちらの操作も完全に終了することができた。
