@@ -131,14 +131,6 @@ int hash(String key) {
     return ret % 30;
 }
 
-int solve(int npos, int c, int graph[1000][1000], int *visited) {
-    int ret = 0;
-    visited[npos] = 1;
-    for (int i=0; i<1000; i++) {
-        if (graph[npos][i] != INT_MAX) {
-    return ret;
-}
-
 int main() {
     int graph[1000][1000];
     char name[1000][1000];
@@ -176,6 +168,13 @@ int main() {
         graph[bnum][anum] = min(graph[bnum][anum], cost);
     }
     // ここでグラフを辿っていく
-    int visited[1000];
-    int res = solve(0, 0, graph, visited);
+    int res = 0;
+    cost = INT_MAX;
+    for (int i=0; i<1000; i++) {
+        if (cost > graph[0][i]) {
+            cost = graph[0][i];
+            res = i;
+        }
+    }
+    printf("%s\n", name[res]);
 }
