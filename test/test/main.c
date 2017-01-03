@@ -1,27 +1,30 @@
-
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 
 typedef char *String;
 typedef struct tnode *BTree;
 struct tnode {
     String key;
-    String value;
+    int value;
     BTree left;
     BTree right;
 };
 
 BTree btree_empty();
 int btree_isempty(BTree t);
-BTree new_node(String key, String val);
-BTree btree_insert(String key, String val, BTree t);
-BTree new_tree(String key, String val, BTree left, BTree right);
+BTree new_node(String key, int val);
+BTree btree_insert(String key, int val, BTree t);
+BTree new_tree(String key, int val, BTree left, BTree right);
 BTree merge_tree(BTree base, BTree ins);
 BTree btree_delete(String key, BTree t);
 struct tnode *btree_search(String key, BTree t);
 void print_btree(BTree t);
 void btree_free(BTree t);
+int min(int a, int b) {
+    return a > b ? b : a;
+}
 
 BTree btree_empty()
 {
@@ -36,18 +39,17 @@ int btree_isempty(BTree t)
     else return 0;
 }
 
-BTree new_node(String key, String val) {
+BTree new_node(String key, int val) {
     BTree new = malloc(sizeof(struct tnode));
-    new->key = malloc(sizeof(key));
-    new->value = malloc(sizeof(val));
+    new->key = malloc(strlen(key));
+    new->value = val;
     strcpy(new->key, key);
-    strcpy(new->value, val);
     new->left = btree_empty();
     new->right = btree_empty();
     return new;
 }
 
-BTree btree_insert(String key, String val, BTree t)
+BTree btree_insert(String key, int val, BTree t)
 {
     /*
      * 文字列`key'をキーとして、文字列`val'を二分探索木`t'に挿入し、その木を返す。
@@ -56,7 +58,7 @@ BTree btree_insert(String key, String val, BTree t)
      */
     if (btree_isempty(t)) return new_node(key, val);
     if (strcmp(t->key, key) == 0) {
-        strcpy(t->value, val);
+        t->value = val;
     } else if (strcmp(t->key, key) < 0) {
         t->left = btree_insert(key, val, t->left);
     } else {
@@ -65,14 +67,13 @@ BTree btree_insert(String key, String val, BTree t)
     return t;
 }
 
-BTree new_tree(String key, String val, BTree left, BTree right) {
+BTree new_tree(String key, int val, BTree left, BTree right) {
     BTree new = malloc(sizeof(struct tnode));
     new->left = left;
     new->right = right;
     new->key = malloc(sizeof(key) + 1);
     strcpy(new->key, key);
-    new->value = malloc(sizeof(val) + 1);
-    strcpy(new->value, val);
+    new->value = val;
     return new;
 }
 
@@ -120,42 +121,61 @@ void btree_free(BTree t)
      */
     if (btree_isempty(t)) return;
     free(t->key);
-    free(t->value);
     btree_free(t->left);
     btree_free(t->right);
 }
 
 int hash(String key) {
     int ret = 0;
-    for (int i=0; i<strlen(key); i++) ret += (int)(key[i] - 'a');
+    for (int i=0; i<strlen(key); i++) ret += (int)(key[i]);
     return ret % 30;
 }
 
 int main() {
+    int graph[1000][1000];
+    char name[1000][1000];
+    for (int i=0; i<1000; i++) for (int j=0; j<1000; j++) graph[i][j] = INT_MAX;
+    int pnum = 1, cost;
+    char start[1000], end[1000], temp1[1000], temp2[1000];
+    scanf("%s%s", start, end);
     BTree *table = malloc(sizeof(struct tnode) * 30);
-    char cmd[100], key[100], val[100];
-    while(scanf("%100s", cmd) != EOF) {
-        if (strcmp(cmd, "insert") == 0) {
-            scanf("%100s%100s", key, val);
-            int h = hash(key);
-            table[h] = btree_insert(key, val, table[h]);
-        } else if (strcmp(cmd, "search") == 0) {
-            scanf("%100s", key);
-            int h = hash(key);
-            struct tnode *res = btree_search(key, table[h]);
-            if (res == NULL) printf("(not found)\n");
-            else printf("%s\n", res->value);
-        } else if (strcmp(cmd, "delete") == 0) {
-            scanf("%100s", key);
-            int h = hash(key);
-            table[h] = btree_delete(key, table[h]);
-        } else if (strcmp(cmd, "quit") == 0) {
-            break;
+    int h = hash(start);
+    table[h] = btree_insert(start, 0, table[h]);
+    h = hash(end);
+    table[h] = btree_insert(end, 1, table[h]);
+    strcpy(name[0], start);
+    strcpy(name[1], end);
+    while (scanf("%s%s%d", temp1, temp2, &cost) != EOF) {
+        int h1 = hash(temp1), h2 = hash(temp2);
+        struct tnode *a = btree_search(temp1, table[h1]);
+        struct tnode *b = btree_search(temp2, table[h2]);
+        int anum, bnum;
+        if (a == NULL) {
+            table[h1] = btree_insert(temp1, ++pnum, table[h1]);
+            strcpy(name[pnum], temp1);
+            anum = pnum;
         } else {
-            printf("(unknown command)\n");
+            anum = a->value;
+        }
+        if (b == NULL) {
+            table[h2] = btree_insert(temp2, ++pnum, table[h2]);
+            strcpy(name[pnum], temp2);
+            bnum = pnum;
+        } else {
+            bnum = b->value;
+        }
+        graph[anum][bnum] = min(graph[anum][bnum], cost);
+        graph[bnum][anum] = min(graph[bnum][anum], cost);
+    }
+    // ここでグラフを辿っていく
+    int res = 0;
+    cost = INT_MAX;
+    for (int i=0; i<1000; i++) {
+        if (cost > graph[0][i]) {
+            cost = graph[0][i];
+            res = i;
         }
     }
-    for (int i=0; i<30; i++) if (!btree_isempty(table[i])) btree_free(table[i]);
-    
-    return 0;
+    printf("%s\n", name[res]);
+    for (int i=0; i<30; i++) btree_free(table[i]);
 }

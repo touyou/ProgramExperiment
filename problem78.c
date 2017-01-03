@@ -177,4 +177,5 @@ int main() {
         }
     }
     printf("%s\n", name[res]);
+    for (int i=0; i<30; i++) btree_free(table[i]);
 }
