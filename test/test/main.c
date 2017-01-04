@@ -47,11 +47,11 @@ void copyPair(Pair *t, Pair *s) {
 }
 
 // -- Heap
-Heap *insertHeap(Heap *heap, Pair val) {
+Heap *insertHeap(Heap *heap, Pair *val) {
     Pair* data = heap->data;
     if (heap->last + 1 > heap->size) return heap;
     ++(heap->last);
-    data[heap->last] = val;
+    copyPair(&data[heap->last], val);
     int i = heap->last;
     while (i > 0) {
         if (data[(i-1)/2].cost > data[i].cost) {
@@ -63,11 +63,11 @@ Heap *insertHeap(Heap *heap, Pair val) {
     }
     return heap;
 }
-Pair deleteMinHeap(Heap *heap) {
+Heap *deleteMinHeap(Heap *heap) {
     Pair* data = heap->data;
-    Pair val;
-    if (heap->last < 0) return val;
-    copyPair(&val, &data[0]);
+    Pair *val = malloc(sizeof(Pair));
+    if (heap->last < 0) return heap;
+    copyPair(val, &data[0]);
     copyPair(&data[0], &data[heap->last]);
     --(heap->last);
     int i = 0;
@@ -87,10 +87,14 @@ Pair deleteMinHeap(Heap *heap) {
             break;
         }
     }
-    return val;
+    return heap;
 }
 int isEmptyHeap(Heap *heap) {
     return heap == NULL;
+}
+void freeHeap(Heap *heap) {
+    free(heap->data);
+    free(heap);
 }
 
 // -- Make Tree
@@ -164,13 +168,14 @@ void dijkstra(char start[1000], char end[1000], Vertex *v) {
     heap->data = malloc(sizeof(Pair) * 1000);
     heap->last = 0;
     heap->size = 1000;
-    Pair p;
-    strcpy(p.v, end);
-    p.cost = 0;
+    Pair *p = malloc(sizeof(Pair));
+    strcpy(p->v, end);
+    p->cost = 0;
     heap = insertHeap(heap, p);
     while (!isEmptyHeap(heap)) {
-        Pair next = deleteMinHeap(heap);
-        Vertex *nv = searchVertex(next.v, v);
+        Pair *next = malloc(sizeof(Pair));
+        copyPair(next, &heap->data[0]);
+        Vertex *nv = searchVertex(next->v, v);
         if (nv->visited) continue;
         nv->visited = 1;
         Edge *ne = nv->adj;
@@ -179,9 +184,9 @@ void dijkstra(char start[1000], char end[1000], Vertex *v) {
             if (nv->cost + nv->adj->weight < next->cost) {
                 next->cost = nv->cost + nv->adj->weight;
                 next->prev = nv;
-                Pair np;
-                strcpy(np.v, next->name);
-                np.cost = next->cost;
+                Pair *np = malloc(sizeof(Pair));
+                strcpy(np->v, next->name);
+                np->cost = next->cost;
                 heap = insertHeap(heap, np);
             }
             ne = ne->next;
@@ -196,6 +201,7 @@ void dijkstra(char start[1000], char end[1000], Vertex *v) {
             s = s->prev;
         }
     }
+    freeHeap(heap);
 }
 
 int main() {
