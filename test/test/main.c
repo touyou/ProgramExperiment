@@ -1,181 +1,216 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <limits.h>
+#include <string.h>
 
+// -- typedef
 typedef char *String;
-typedef struct tnode *BTree;
-struct tnode {
-    String key;
-    int value;
-    BTree left;
-    BTree right;
-};
+typedef struct Vertex {
+    char name[1000];
+    int cost;
+    int visited;
+    struct Vertex *prev;
+    struct Edge *adj;
+    struct Vertex *left;
+    struct Vertex *right;
+} Vertex;
+typedef struct Edge {
+    struct Vertex *targetp;
+    int weight;
+    struct Edge *next;
+} Edge;
+typedef struct Pair {
+    char v[1000];
+    int cost;
+} Pair;
+typedef struct Heap {
+    struct Pair *data;
+    int last;
+    int size;
+} Heap;
 
-BTree btree_empty();
-int btree_isempty(BTree t);
-BTree new_node(String key, int val);
-BTree btree_insert(String key, int val, BTree t);
-BTree new_tree(String key, int val, BTree left, BTree right);
-BTree merge_tree(BTree base, BTree ins);
-BTree btree_delete(String key, BTree t);
-struct tnode *btree_search(String key, BTree t);
-void print_btree(BTree t);
-void btree_free(BTree t);
-int min(int a, int b) {
-    return a > b ? b : a;
+// -- Util
+void swapPair(Pair *a, Pair *b) {
+    int tempNum = a->cost;
+    char temp[1000];
+    strcpy(temp, a->v);
+    
+    a->cost = b->cost;
+    strcpy(a->v, b->v);
+    
+    b->cost = tempNum;
+    strcpy(b->v, temp);
+}
+void copyPair(Pair *t, Pair *s) {
+    t->cost = s->cost;
+    strcpy(t->v, s->v);
 }
 
-BTree btree_empty()
-{
-    /* 空木を返す。 */
-    return NULL;
-}
-
-int btree_isempty(BTree t)
-{
-    /* `t'が空木なら0以外を、そうでないなら0を返す。 */
-    if (t == NULL) return 1;
-    else return 0;
-}
-
-BTree new_node(String key, int val) {
-    BTree new = malloc(sizeof(struct tnode));
-    new->key = malloc(strlen(key));
-    new->value = val;
-    strcpy(new->key, key);
-    new->left = btree_empty();
-    new->right = btree_empty();
-    return new;
-}
-
-BTree btree_insert(String key, int val, BTree t)
-{
-    /*
-     * 文字列`key'をキーとして、文字列`val'を二分探索木`t'に挿入し、その木を返す。
-     * `key'と`val'の内容はデータベースにコピーされる。
-     * 同じキーを持つ項目が既に存在する場合は、その項目を上書きする。
-     */
-    if (btree_isempty(t)) return new_node(key, val);
-    if (strcmp(t->key, key) == 0) {
-        t->value = val;
-    } else if (strcmp(t->key, key) < 0) {
-        t->left = btree_insert(key, val, t->left);
-    } else {
-        t->right = btree_insert(key, val, t->right);
+// -- Heap
+Heap *insertHeap(Heap *heap, Pair val) {
+    Pair* data = heap->data;
+    if (heap->last + 1 > heap->size) return heap;
+    ++(heap->last);
+    data[heap->last] = val;
+    int i = heap->last;
+    while (i > 0) {
+        if (data[(i-1)/2].cost > data[i].cost) {
+            swapPair(&data[(i-1)/2], &data[i]);
+            i = (i-1)/2;
+        } else {
+            return heap;
+        }
     }
-    return t;
+    return heap;
 }
-
-BTree new_tree(String key, int val, BTree left, BTree right) {
-    BTree new = malloc(sizeof(struct tnode));
-    new->left = left;
-    new->right = right;
-    new->key = malloc(sizeof(key) + 1);
-    strcpy(new->key, key);
-    new->value = val;
-    return new;
-}
-
-BTree merge_tree(BTree base, BTree ins) {
-    if (btree_isempty(ins)) return base;
-    BTree new = btree_insert(ins->key, ins->value, base);
-    return merge_tree(merge_tree(new, ins->left), ins->right);
-}
-
-BTree btree_delete(String key, BTree t)
-{
-    /*
-     * 文字列`key'をキーとする項目を、二分探索木`t'から削除し、その木を返す。
-     */
-    if (btree_isempty(t)) return t;
-    if (strcmp(t->key, key) == 0) {
-        if (btree_isempty(t->right))
-            t = t->left;
-        else
-            t = new_tree(t->right->key, t->right->value, merge_tree(t->left, t->right->left), t->right->right);
-    } else if (strcmp(t->key, key) < 0) {
-        t->left = btree_delete(key, t->left);
-    } else {
-        t->right = btree_delete(key, t->right);
+Pair deleteMinHeap(Heap *heap) {
+    Pair* data = heap->data;
+    Pair val;
+    if (heap->last < 0) return val;
+    copyPair(&val, &data[0]);
+    copyPair(&data[0], &data[heap->last]);
+    --(heap->last);
+    int i = 0;
+    while (i < heap->last / 2) {
+        if (data[i].cost > data[i*2+1].cost) {
+            if (data[i*2+2].cost < data[i*2+1].cost) {
+                swapPair(&data[i], &data[i*2+2]);
+                i = i * 2 + 2;
+            } else {
+                swapPair(&data[i], &data[i*2+1]);
+                i = i * 2 + 1;
+            }
+        } else if (data[i].cost > data[i*2+2].cost) {
+            swapPair(&data[i], &data[i*2+2]);
+            i = i * 2 + 2;
+        } else {
+            break;
+        }
     }
-    return t;
+    return val;
+}
+int isEmptyHeap(Heap *heap) {
+    return heap == NULL;
 }
 
-struct tnode *btree_search(String key, BTree t)
-{
-    /*
-     * 二分探索木`t'を検索し、文字列`key'をキーとするノードへのポインタを返す。
-     * 見付からない場合は、NULLを返す。
-     */
-    if (btree_isempty(t)) return NULL;
-    if (strcmp(key, t->key) == 0) return t;
-    else if (strcmp(t->key, key) < 0) return btree_search(key, t->left);
-    else return btree_search(key, t->right);
+// -- Make Tree
+Vertex *singleVertex(char name[1000]) {
+    Vertex *vertex = malloc(sizeof(Vertex));
+    strcpy(vertex->name, name);
+    vertex->cost = INT_MAX;
+    vertex->visited = 0;
+    vertex->prev = NULL;
+    vertex->left = NULL;
+    vertex->right = NULL;
+    vertex->adj = NULL;
+    return vertex;
 }
 
-void btree_free(BTree t)
-{
-    /*
-     * 二分探索木`t'の内容を全て消去し、メモリを解放する。
-     */
-    if (btree_isempty(t)) return;
-    free(t->key);
-    btree_free(t->left);
-    btree_free(t->right);
+Vertex *insertVertex(char name[1000], Vertex *v) {
+    if (v == NULL) return singleVertex(name);
+    if (strcmp(name, v->name) > 0) {
+        v->right = insertVertex(name, v->right);
+    } else if (strcmp(name, v->name)) {
+        v->left = insertVertex(name, v->left);
+    }
+    return v;
+}
+Vertex *searchVertex(char name[1000], Vertex *v) {
+    if (v == NULL) return NULL;
+    if (strcmp(name, v->name) == 0) return v;
+    else if (strcmp(name, v->name) > 0) return searchVertex(name, v->right);
+    else return searchVertex(name, v->left);
+}
+Edge *insertEdge(Vertex *target, int weight, Edge *e) {
+    if (e == NULL) {
+        Edge *new = malloc(sizeof(Edge));
+        new->targetp = target;
+        new->weight = weight;
+        new->next = NULL;
+        return new;
+    }
+    if (strcmp(target->name, e->targetp->name) == 0) e->weight = e->weight > weight ? weight : e->weight;
+    else e->next = insertEdge(target, weight, e->next);
+    return e;
+}
+Vertex *updateVertex(char name[1000], char targetName[1000], int weight, Vertex *v) {
+    Vertex *s = searchVertex(name, v);
+    Vertex *t = searchVertex(targetName, v);
+    if (s == NULL) s = singleVertex(name);
+    if (t == NULL) t = singleVertex(targetName);
+    v->adj = insertEdge(t, weight, s->adj);
+    return v;
+}
+void freeEdge(Edge *e) {
+    if (e == NULL) return;
+    freeEdge(e->next);
+    free(e);
+}
+void freeVertex(Vertex *v) {
+    if (v == NULL) return;
+    freeEdge(v->adj);
+    freeVertex(v->left);
+    freeVertex(v->right);
 }
 
-int hash(String key) {
-    int ret = 0;
-    for (int i=0; i<strlen(key); i++) ret += (int)(key[i]);
-    return ret % 30;
+void dijkstra(char start[1000], char end[1000], Vertex *v) {
+    Vertex *e = searchVertex(end, v);
+    if (e == NULL) {
+        puts("(no route)");
+        return;
+    }
+    e->cost = 0;
+    Heap *heap = malloc(sizeof(Heap));
+    heap->data = malloc(sizeof(Pair) * 1000);
+    heap->last = 0;
+    heap->size = 1000;
+    Pair p;
+    strcpy(p.v, end);
+    p.cost = 0;
+    heap = insertHeap(heap, p);
+    while (!isEmptyHeap(heap)) {
+        Pair next = deleteMinHeap(heap);
+        Vertex *nv = searchVertex(next.v, v);
+        if (nv->visited) continue;
+        nv->visited = 1;
+        Edge *ne = nv->adj;
+        while (ne != NULL) {
+            Vertex *next = nv->adj->targetp;
+            if (nv->cost + nv->adj->weight < next->cost) {
+                next->cost = nv->cost + nv->adj->weight;
+                next->prev = nv;
+                Pair np;
+                strcpy(np.v, next->name);
+                np.cost = next->cost;
+                heap = insertHeap(heap, np);
+            }
+            ne = ne->next;
+        }
+    }
+    Vertex *s = searchVertex(start, v);
+    if (s->prev == NULL) {
+        puts("(no route)");
+    } else {
+        while (s->prev != NULL) {
+            printf("%s\n", s->name);
+            s = s->prev;
+        }
+    }
 }
 
 int main() {
-    int graph[1000][1000];
-    char name[1000][1000];
-    for (int i=0; i<1000; i++) for (int j=0; j<1000; j++) graph[i][j] = INT_MAX;
-    int pnum = 1, cost;
-    char start[1000], end[1000], temp1[1000], temp2[1000];
+    char start[1000], end[1000], inp1[1000], inp2[1000];
+    int cost;
     scanf("%s%s", start, end);
-    BTree *table = malloc(sizeof(struct tnode) * 30);
-    int h = hash(start);
-    table[h] = btree_insert(start, 0, table[h]);
-    h = hash(end);
-    table[h] = btree_insert(end, 1, table[h]);
-    strcpy(name[0], start);
-    strcpy(name[1], end);
-    while (scanf("%s%s%d", temp1, temp2, &cost) != EOF) {
-        int h1 = hash(temp1), h2 = hash(temp2);
-        struct tnode *a = btree_search(temp1, table[h1]);
-        struct tnode *b = btree_search(temp2, table[h2]);
-        int anum, bnum;
-        if (a == NULL) {
-            table[h1] = btree_insert(temp1, ++pnum, table[h1]);
-            strcpy(name[pnum], temp1);
-            anum = pnum;
-        } else {
-            anum = a->value;
-        }
-        if (b == NULL) {
-            table[h2] = btree_insert(temp2, ++pnum, table[h2]);
-            strcpy(name[pnum], temp2);
-            bnum = pnum;
-        } else {
-            bnum = b->value;
-        }
-        graph[anum][bnum] = min(graph[anum][bnum], cost);
-        graph[bnum][anum] = min(graph[bnum][anum], cost);
+    Vertex *vertex = singleVertex(start);
+    vertex = insertVertex(end, vertex);
+    while (scanf("%s%s%d", inp1, inp2, &cost) != EOF) {
+        vertex = insertVertex(inp1, vertex);
+        vertex = insertVertex(inp2, vertex);
+        vertex = updateVertex(inp1, inp2, cost, vertex);
+        vertex = updateVertex(inp2, inp1, cost, vertex);
     }
-    // ここでグラフを辿っていく
-    int res = 0;
-    cost = INT_MAX;
-    for (int i=0; i<1000; i++) {
-        if (cost > graph[0][i]) {
-            cost = graph[0][i];
-            res = i;
-        }
-    }
-    printf("%s\n", name[res]);
-    for (int i=0; i<30; i++) btree_free(table[i]);
+    dijkstra(start, end, vertex);
+    freeVertex(vertex);
+    return 0;
 }
