@@ -20,6 +20,26 @@ typedef struct Edge {
     struct Edge *next;
 } Edge;
 
+void printVertex(Vertex *v) {
+    if (v == NULL) return;
+    printf("name: %s\n", v->name);
+    Edge *adj = v->adj;
+    int cnt = 0;
+    puts("adj");
+    while (adj != NULL) {
+        printf("%s ", adj->targetp->name);
+        adj = adj->next;
+    }
+    puts("");
+    printVertex(v->left);
+    printVertex(v->right);
+}
+void printEdge(Edge *adj) {
+    if (adj == NULL) return;
+    printf("%s ",adj->targetp->name);
+    printEdge(adj->next);
+}
+
 // -- Make Tree
 Vertex *singleVertex(char name[1000]) {
     Vertex *vertex = malloc(sizeof(Vertex));
@@ -56,16 +76,17 @@ Edge *insertEdge(Vertex *target, int weight, Edge *e) {
         new->next = NULL;
         return new;
     }
-    if (strcmp(target->name, e->targetp->name) == 0) e->weight = e->weight > weight ? weight : e->weight;
-    else e->next = insertEdge(target, weight, e->next);
+    if (strcmp(target->name, e->targetp->name) == 0) {
+        e->weight = e->weight > weight ? weight : e->weight;
+    } else {
+        e->next = insertEdge(target, weight, e->next);
+    }
     return e;
 }
 Vertex *updateVertex(char name[1000], char targetName[1000], int weight, Vertex *v) {
     Vertex *s = searchVertex(name, v);
     Vertex *t = searchVertex(targetName, v);
-    if (s == NULL) s = singleVertex(name);
-    if (t == NULL) t = singleVertex(targetName);
-    v->adj = insertEdge(t, weight, s->adj);
+    s->adj = insertEdge(t, weight, s->adj);
     return v;
 }
 void freeEdge(Edge *e) {
@@ -81,7 +102,7 @@ void freeVertex(Vertex *v) {
 }
 Vertex *minVertex(int dist, Vertex *v) {
     if (v == NULL) return NULL;
-    if (!v->visited) {
+    if (v->visited) {
         Vertex *leftMin = minVertex(dist, v->left);
         Vertex *rightMin = minVertex(dist, v->right);
         if (leftMin == NULL && rightMin == NULL) return NULL;
@@ -111,7 +132,7 @@ Vertex *minVertex(int dist, Vertex *v) {
 void dijkstra(char start[1000], char end[1000], Vertex *v) {
     Vertex *e = searchVertex(end, v);
     if (e == NULL) {
-        puts("(no route)");
+        puts("data structure error");
         return;
     }
     e->cost = 0;
@@ -129,6 +150,7 @@ void dijkstra(char start[1000], char end[1000], Vertex *v) {
                     adj->targetp->prev = ne;
                 }
             }
+            adj = adj->next;
         }
     }
     Vertex *s = searchVertex(start, v);
@@ -139,6 +161,7 @@ void dijkstra(char start[1000], char end[1000], Vertex *v) {
             printf("%s\n", s->name);
             s = s->prev;
         }
+        printf("%s\n", e->name);
     }
 }
 
@@ -154,6 +177,7 @@ int main() {
         vertex = updateVertex(inp1, inp2, cost, vertex);
         vertex = updateVertex(inp2, inp1, cost, vertex);
     }
+    // printVertex(vertex);
     dijkstra(start, end, vertex);
     freeVertex(vertex);
     return 0;
