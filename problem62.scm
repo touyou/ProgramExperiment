@@ -20,9 +20,6 @@
         (if (pair? found)
           found
           (lookup-var var (cdr env))))))
-(define (make-top-env)
-  ;; make top env?
-  )
 ;; lambda closure
 (define (make-closure env params body)
   (cons '*lambda* (cons env (cons params body))))
@@ -62,6 +59,13 @@
         ((equal? (car exp) 'begin) (begin-eval env exp))
         ((equal? (car exp) 'quote) (quote-eval env exp))
         (else (app-eval env exp))))
+(define (eval-error env type exp)
+  (display "ERROR: ")
+  (write type)
+  (display ": ")
+  (print-data exp)
+  (newline)
+  (cons env '*error*))
 
 
 (define (scheme)
