@@ -76,7 +76,6 @@
        (body (cddr exp)))
     (cons (cons 'lambda (cons (map car decl) body))
           (map cadr decl))))
-; task functionの略記対応
 (define (def-eval env exp)
   (if (correct-syntax? 'define exp)
     (let* ((var (cadr exp))
@@ -85,12 +84,10 @@
            (val (cdr res)))
       (cons (define-var env var val) var))
     (eval-error env 'syntax-error exp)))
-; task define var-eval lookup-varを使う
 (define (lambda-eval env exp)
   (if (correct-syntax? 'lambda exp)
     (cons env (make-closure env (cadr exp) (cddr exp)))
     (eval-error env 'syntax-error exp)))
-; task define 対応(or 再帰対応)
 (define (map-base-eval env el)
   (cons env
         (map (lambda (exp) (cdr (base-eval env exp))) el)))
@@ -161,7 +158,6 @@
                              (re-loop env))))
                      (re-loop env))))))))
   env))
-; task if-eval and quote-eval
 (define (scheme)
   (let ((top-env (make-top-env)))
     (define (rep-loop env)
@@ -174,4 +170,5 @@
         (if (equal? val '*exit*)
             #t
             (rep-loop env))))
-    (rep-loop top-env)))
+    (let ((top-env (car (base-eval top-env '(load "preamble.scm")))))
+    (rep-loop top-env))))
