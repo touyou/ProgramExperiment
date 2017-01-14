@@ -66,8 +66,102 @@
   (print-data exp)
   (newline)
   (cons env '*error*))
-
-
+(define (correct-syntax? type exp) #t)
+(define (let-eval env exp)
+  (if (correct-syntax? 'let exp)
+    (base-eval env (let->app exp))
+    (eval-error env 'syntax-error exp)))
+(define (let->app exp)
+  (let ((decl (cadr exp))
+       (body (cddr exp)))
+    (cons (cons 'lambda (cons (map car decl) body))
+          (map cadr decl))))
+; task functionの略記対応
+(define (def-eval env exp)
+  (if (correct-syntax? 'define exp)
+    (let* ((var (cadr exp))
+           (res (base-eval env (caddr exp)))
+           (env (car res))
+           (val (cdr res)))
+      (cons (define-var env var val) var))
+    (eval-error env 'syntax-error exp)))
+; task define var-eval lookup-varを使う
+(define (lambda-eval env exp)
+  (if (correct-syntax? 'lambda exp)
+    (cons env (make-closure env (cadr exp) (cddr exp)))
+    (eval-error env 'syntax-error exp)))
+; task define 対応(or 再帰対応)
+(define (map-base-eval env el)
+  (cons env
+        (map (lambda (exp) (cdr (base-eval env exp))) el)))
+(define (base-apply env fun args)
+  (cond ((data-closure? fun)
+        ;; task
+        )
+        ((data-primitive? fun)
+          (if (or (not (number? (primitive-arity fun)))
+                  (= (primitive-arity fun) (length args)))
+            ((primitive-fun fun) env args)
+            (eval-error env 'wrong-number-of-args fun)))
+          (else
+            (eval-error env 'non-function fun))))
+(define (app-eval env exp)
+  (if (correct-syntax? 'app exp)
+    (let* ((l (map-base-eval env exp))
+           (env (car l))
+           (fun (cadr l))
+           (args (cddr l)))
+      (base-apply env fun args))
+    (eval-error env 'syntax-error exp)))
+(define (make-top-env)
+  (let* ((env (make-env))
+         (env
+           (define-var env '=
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (= (car args) (cadr args)))))))
+         (env
+           (define-var env '+
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (+ (car args) (cadr args)))))))
+         (env
+           (define-var env '*
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (* (car args) (cadr args)))))))
+         (env
+           (define-var env 'list
+             (make-primitive #f (lambda (env args) (cons env args)))))
+         (env
+           (define-var env 'null?
+             (make-primitive 1 (lambda (env args)
+                                 (cons env (null? (car args)))))))
+         (env
+           (define-var env 'equal?
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (equal? (car args) (cadr args)))))))
+         (env
+           (define-var env 'display
+             (make-primitive
+              1
+              (lambda (env args)
+                (display (car args))
+                (cons env '*unspecified*)))))
+         (env
+           (define-var env 'load
+             (make-primitive
+               1
+               (lambda (env args)
+                 (with-input-from-file (car args)
+                   (lambda ()
+                     (define (re-loop env)
+                       (let* ((res (base-eval env (read)))
+                              (env (car res))
+                              (val (cdr res)))
+                         (if (equal? val '*exit*)
+                             (cons env '*unspecified*)
+                             (re-loop env))))
+                     (re-loop env))))))))
+  env))
+; task if-eval and quote-eval
 (define (scheme)
   (let ((top-env (make-top-env)))
     (define (rep-loop env)
