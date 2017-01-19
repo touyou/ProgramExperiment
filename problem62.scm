@@ -84,6 +84,8 @@
            (val (cdr res)))
       (cons (define-var env var val) var))
     (eval-error env 'syntax-error exp)))
+(define (var-eval env exp)
+  (cdar (lookup-var exp env)))
 (define (lambda-eval env exp)
   (if (correct-syntax? 'lambda exp)
     (cons env (make-closure env (cadr exp) (cddr exp)))
