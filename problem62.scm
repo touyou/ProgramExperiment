@@ -1,10 +1,12 @@
-;; enviroment
+;; frame
 (define (empty-frame)
   (list))
 (define (update frame var val)
   (cons (cons var val) frame))
 (define (lookup var frame)
   (assoc var frame))
+
+;; environment
 (define (make-env)
   (list (empty-frame)))
 (define (extend-env env)
@@ -20,6 +22,7 @@
         (if (pair? found)
           found
           (lookup-var var (cdr env))))))
+
 ;; lambda closure
 (define (make-closure env params body)
   (cons '*lambda* (cons env (cons params body))))
@@ -28,6 +31,7 @@
 (define closure-env cadr)
 (define closure-params caddr)
 (define closure-body cdddr)
+
 ;; primitive function
 (define (make-primitive arity fun)
   (list '*primitive* arity fun))
@@ -35,6 +39,7 @@
   (and (pair? data) (equal? (car data) '*primitive*)))
 (define primitive-arity cadr)
 (define primitive-fun caddr)
+
 ;; utility
 (define (print-data data)
   (cond ((data-closure? data) (display "#<closure>"))
@@ -45,6 +50,9 @@
         (else (write data))))
 (define (constant? exp)
   (or (boolean? exp) (number? exp) (string? exp)))
+(define (correct-syntax? type exp) #t)
+
+;; eval
 (define (base-eval env exp)
   (cond ((eof-object? exp) (cons env '*exit*))
         ((constant? exp) (cons env exp))
@@ -66,7 +74,7 @@
   (print-data exp)
   (newline)
   (cons env '*error*))
-(define (correct-syntax? type exp) #t)
+
 (define (let-eval env exp)
   (if (correct-syntax? 'let exp)
     (base-eval env (let->app exp))
@@ -76,6 +84,7 @@
        (body (cddr exp)))
     (cons (cons 'lambda (cons (map car decl) body))
           (map cadr decl))))
+
 (define (def-eval env exp)
   (if (correct-syntax? 'define exp)
     (let* ((var (cadr exp))
@@ -84,19 +93,35 @@
            (val (cdr res)))
       (cons (define-var env var val) var))
     (eval-error env 'syntax-error exp)))
+
 (define (var-eval env exp)
   (cdar (lookup-var exp env)))
+
+(define (if-eval env exp)
+  (if (correct-syntax? 'if exp)
+    (cons env
+      (if (cdar exp)
+        (cddar exp)
+        (cdddr exp)))
+    (eval-error env 'syntax-error exp)))
+
+(define (quote-eval env exp)
+  (if (correct-syntax? 'quote exp)
+    (cons env (cdr exp))
+    (eval-error env 'syntax-error exp)))
+
 (define (lambda-eval env exp)
   (if (correct-syntax? 'lambda exp)
     (cons env (make-closure env (cadr exp) (cddr exp)))
     (eval-error env 'syntax-error exp)))
+
 (define (map-base-eval env el)
   (cons env
         (map (lambda (exp) (cdr (base-eval env exp))) el)))
+
 (define (base-apply env fun args)
   (cond ((data-closure? fun)
-        ;; task
-        )
+          (base-eval (extend-env (closure-env fun)) (closure-body fun)))
         ((data-primitive? fun)
           (if (or (not (number? (primitive-arity fun)))
                   (= (primitive-arity fun) (length args)))
@@ -104,6 +129,7 @@
             (eval-error env 'wrong-number-of-args fun)))
           (else
             (eval-error env 'non-function fun))))
+
 (define (app-eval env exp)
   (if (correct-syntax? 'app exp)
     (let* ((l (map-base-eval env exp))
@@ -112,6 +138,7 @@
            (args (cddr l)))
       (base-apply env fun args))
     (eval-error env 'syntax-error exp)))
+
 (define (make-top-env)
   (let* ((env (make-env))
          (env
@@ -160,6 +187,7 @@
                              (re-loop env))))
                      (re-loop env))))))))
   env))
+
 (define (scheme)
   (let ((top-env (make-top-env)))
     (define (rep-loop env)
