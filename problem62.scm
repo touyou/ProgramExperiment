@@ -82,7 +82,7 @@
 
  ; self
 (define (var-eval env exp)
-  (cadr (lookup-var exp env)))
+  (lookup-var exp env))
 
 ; self
 (define (if-eval env exp)
