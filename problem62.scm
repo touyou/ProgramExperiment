@@ -11,7 +11,7 @@
   (list (empty-frame)))
 (define (extend-env env)
   (cons (empty-frame) env))
-(define (define-var! env var val)
+(define (define-var env var val)
   (if (null? env)
     env
     (cons (update (car env) var val) (cdr env))))
@@ -53,20 +53,6 @@
 (define (correct-syntax? type exp) #t)
 
 ;; eval
-(define (base-eval env exp)
-  (cond ((eof-object? exp) (cons env '*exit*))
-        ((constant? exp) (cons env exp))
-        ((symbol? exp) (var-eval env exp))
-        ((not (pair? exp)) (eval-error env 'unknown-data exp))
-        ((equal? (car exp) 'exit) (cons env '*exit*))
-        ((equal? (car exp) 'define) (def-eval env exp))
-        ((equal? (car exp) 'let) (let-eval env exp))
-        ((equal? (car exp) 'letrec) (letrec-eval env exp))
-        ((equal? (car exp) 'lambda) (lambda-eval env exp))
-        ((equal? (car exp) 'if) (if-eval env exp))
-        ((equal? (car exp) 'begin) (begin-eval env exp))
-        ((equal? (car exp) 'quote) (quote-eval env exp))
-        (else (app-eval env exp))))
 (define (eval-error env type exp)
   (display "ERROR: ")
   (write type)
@@ -94,9 +80,11 @@
       (cons (define-var env var val) var))
     (eval-error env 'syntax-error exp)))
 
+ ; self
 (define (var-eval env exp)
-  (cdar (lookup-var exp env)))
+  (cadr (lookup-var exp env)))
 
+; self
 (define (if-eval env exp)
   (if (correct-syntax? 'if exp)
     (cons env
@@ -105,6 +93,7 @@
         (cdddr exp)))
     (eval-error env 'syntax-error exp)))
 
+;self
 (define (quote-eval env exp)
   (if (correct-syntax? 'quote exp)
     (cons env (cdr exp))
@@ -138,6 +127,21 @@
            (args (cddr l)))
       (base-apply env fun args))
     (eval-error env 'syntax-error exp)))
+
+(define (base-eval env exp)
+  (cond ((eof-object? exp) (cons env '*exit*))
+        ((constant? exp) (cons env exp))
+        ((symbol? exp) (var-eval env exp))
+        ((not (pair? exp)) (eval-error env 'unknown-data exp))
+        ((equal? (car exp) 'exit) (cons env '*exit*))
+        ((equal? (car exp) 'define) (def-eval env exp))
+        ((equal? (car exp) 'let) (let-eval env exp))
+        ((equal? (car exp) 'letrec) (letrec-eval env exp))
+        ((equal? (car exp) 'lambda) (lambda-eval env exp))
+        ((equal? (car exp) 'if) (if-eval env exp))
+        ((equal? (car exp) 'begin) (begin-eval env exp))
+        ((equal? (car exp) 'quote) (quote-eval env exp))
+        (else (app-eval env exp))))
 
 (define (make-top-env)
   (let* ((env (make-env))
