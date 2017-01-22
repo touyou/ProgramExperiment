@@ -11,10 +11,15 @@
   (list (empty-frame)))
 (define (extend-env env)
   (cons (empty-frame) env))
-(define (define-var env var val)
+;(define (define-var env var val)
+;  (if (null? env)
+;    env
+;    (cons (update (car env) var val) (cdr env))))
+(define (define-var! env var val)
   (if (null? env)
-    env
-    (cons (update (car env) var val) (cdr env))))
+    #f
+    (set-car! env (update (car env) var val)))
+  env)
 (define (lookup-var var env)
   (if (null? env)
     #f
@@ -80,20 +85,21 @@
       (cons (define-var env var val) var))
     (eval-error env 'syntax-error exp)))
 
- ; self
 (define (var-eval env exp)
-  (lookup-var exp env))
+  (let ((found (lookup-var exp env)))
+    (if (pair? found)
+      (cons env (cdr found))
+      (eval-error env 'unknown-data exp))))
 
-; self
 (define (if-eval env exp)
   (if (correct-syntax? 'if exp)
-    (cons env
-      (if (cdar exp)
-        (cddar exp)
-        (cdddr exp)))
+    (let* ((res (base-eval env (cadr exp)))
+          (val (cdr res)))
+      (if val
+        (base-eval env (caddr exp))
+        (base-eval env (cdddr exp))))
     (eval-error env 'syntax-error exp)))
 
-;self
 (define (quote-eval env exp)
   (if (correct-syntax? 'quote exp)
     (cons env (cdr exp))
@@ -108,16 +114,27 @@
   (cons env
         (map (lambda (exp) (cdr (base-eval env exp))) el)))
 
+(define (define-vars! env vars vals)
+  (if (null? vars)
+    env
+    (define-vars (define-var env (car vars) (car vals)) (cdr vars) (cdr vals))))
+
 (define (base-apply env fun args)
   (cond ((data-closure? fun)
-          (base-eval (extend-env (closure-env fun)) (closure-body fun)))
+          (if (= (length (closure-params fun)) (length args))
+            (let* ((params (closure-params fun))
+                   (exenv (extend-env (closure-env fun)))
+                   (newenv (define-vars exenv params args))
+                   (body (closure-body fun)))
+              (cons env (cdr (base-eval newenv (car body)))))
+            (eval-error env 'wrong-number-of-args fun)))
         ((data-primitive? fun)
           (if (or (not (number? (primitive-arity fun)))
                   (= (primitive-arity fun) (length args)))
             ((primitive-fun fun) env args)
             (eval-error env 'wrong-number-of-args fun)))
-          (else
-            (eval-error env 'non-function fun))))
+        (else
+          (eval-error env 'non-function fun))))
 
 (define (app-eval env exp)
   (if (correct-syntax? 'app exp)
@@ -129,6 +146,8 @@
     (eval-error env 'syntax-error exp)))
 
 (define (base-eval env exp)
+  (print-data exp)
+  (newline)
   (cond ((eof-object? exp) (cons env '*exit*))
         ((constant? exp) (cons env exp))
         ((symbol? exp) (var-eval env exp))
@@ -157,6 +176,18 @@
            (define-var env '*
              (make-primitive 2 (lambda (env args)
                                  (cons env (* (car args) (cadr args)))))))
+         (env
+           (define-var env '>
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (> (car args) (cadr args)))))))
+         (env
+           (define-var env '<
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (< (car args) (cadr args)))))))
+         (env
+           (define-var env 'cons
+             (make-primitive 2 (lambda (env args)
+                                 (cons env (cons (car args) (cadr args)))))))
          (env
            (define-var env 'list
              (make-primitive #f (lambda (env args) (cons env args)))))
@@ -200,6 +231,10 @@
              (env (car res))
              (val (cdr res)))
         (print-data val)
+        ;(let ((info (lookup-var 'former env)))
+        ;  (if (pair? info)
+        ;    (print-data (lookup-var 'latter (closure-env (cdr info))))
+        ;    (display "undefined")))
         (newline)
         (if (equal? val '*exit*)
             #t
